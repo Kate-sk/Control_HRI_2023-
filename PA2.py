@@ -116,11 +116,16 @@ model = robot_arm_2dof(l)
 pygame.init() # start pygame
 window = pygame.display.set_mode((800, 600)) # create a window (size in pixels)
 window.fill((255,255,255)) # white background
+
+
+# body = pygame.image.load('body.png')
+screenPatient = pygame.Surface((800,600))
+
 xc, yc = window.get_rect().center # window center
-pygame.display.set_caption('robot arm')
+pygame.display.set_caption('Patient body')
 
 font = pygame.font.Font('freesansbold.ttf', 12) # printing text font and font size
-text = font.render('robot arm', True, (0, 0, 0), (255, 255, 255)) # printing text object
+text = font.render('Patient body', True, (0, 0, 0), (255, 255, 255)) # printing text object
 textRect = text.get_rect()
 textRect.topleft = (10, 10) # printing text position with respect to the top-left corner of the window
 
@@ -136,14 +141,20 @@ dp = np.zeros(2) # actual endpoint velocity
 F = np.zeros(2) # endpoint force
 q = np.zeros(2) # joint position
 p_prev = np.zeros(2) # previous endpoint position
-m = 0.5 # endpoint mass
+m = 0.5 # endpoint mass -- scalpel mass 22g  + robot's end effector
 i = 0 # loop counter
 state = [] # state vector
 
 # scaling
 window_scale = 800 # conversion from meters to pixles
 
+# draw scalpel
+hscalpel = pygame.image.load('scalpel.png')
+hscalpel = pygame.transform.scale(hscalpel, (0.5, 0.5))
+scalpel  = pygame.Rect(*screenPatient.get_rect().center, 0, 0).inflate(5, 5)
+cursor  = pygame.Rect(0, 0, 5, 5)
 
+xh = np.array(scalpel.center)
 
 # wait until the start button is pressed
 run = True
@@ -173,9 +184,8 @@ while run:
     
     '''*********** Student should fill in ***********'''
     # main control code
-    '''*********** Student should fill in ***********'''
-
-
+    pm = np.array(pygame.mouse.get_pos())  # in VRenv frame
+    scalpel.center = pm
 
 	# previous endpoint position for velocity calculation
     p_prev = p.copy()
@@ -211,24 +221,26 @@ while run:
     
     # real-time plotting
     window.fill((255,255,255)) # clear window
+    # screenPatient.blit(hscalpel, (scalpel.topleft[0], scalpel.topleft[1]))
+    ### scalpel visualisation
+    screenPatient.blit(hscalpel, (scalpel.topleft[0], scalpel.topleft[1]))
+    window.blit(screenPatient, (0, 0))
     '''*********** Student should fill in ***********'''
-    # draw a wall
-    '''*********** Student should fill in ***********'''
-    pygame.draw.circle(window, (0, 255, 0), (pm[0], pm[1]), 5) # draw reference position
-    pygame.draw.lines(window, (0, 0, 255), False, [(window_scale*x0+xc,-window_scale*y0+yc), (window_scale*x1+xc,-window_scale*y1+yc), (window_scale*x2+xc,-window_scale*y2+yc)], 6) # draw links
-    pygame.draw.circle(window, (0, 0, 0), (window_scale*x0+xc,-window_scale*y0+yc), 9) # draw shoulder / base
-    pygame.draw.circle(window, (0, 0, 0), (window_scale*x1+xc,-window_scale*y1+yc), 9) # draw elbow
-    pygame.draw.circle(window, (255, 0, 0), (window_scale*x2+xc,-window_scale*y2+yc), 5) # draw hand / endpoint
-    
-    force_scale = 50/(window_scale*(l1*l1)) # scale for displaying force vector
-    pygame.draw.line(window, (0, 255, 255), (window_scale*x2+xc,-window_scale*y2+yc), ((window_scale*x2+xc)+F[0]*force_scale,(-window_scale*y2+yc-F[1]*force_scale)), 2) # draw endpoint force vector
-    
+    # pygame.draw.circle(window, (0, 255, 0), (pm[0], pm[1]), 5) # draw reference position
+    # pygame.draw.lines(window, (0, 0, 255), False, [(window_scale*x0+xc,-window_scale*y0+yc), (window_scale*x1+xc,-window_scale*y1+yc), (window_scale*x2+xc,-window_scale*y2+yc)], 6) # draw links
+    # pygame.draw.circle(window, (0, 0, 0), (window_scale*x0+xc,-window_scale*y0+yc), 9) # draw shoulder / base
+    # pygame.draw.circle(window, (0, 0, 0), (window_scale*x1+xc,-window_scale*y1+yc), 9) # draw elbow
+    # pygame.draw.circle(window, (255, 0, 0), (window_scale*x2+xc,-window_scale*y2+yc), 5) # draw hand / endpoint
+    #
+    # force_scale = 50/(window_scale*(l1*l1)) # scale for displaying force vector
+    # pygame.draw.line(window, (0, 255, 255), (window_scale*x2+xc,-window_scale*y2+yc), ((window_scale*x2+xc)+F[0]*force_scale,(-window_scale*y2+yc-F[1]*force_scale)), 2) # draw endpoint force vector
+    #
     '''*********** Student should fill in ***********'''
     # visualise manipulability
     '''*********** Student should fill in ***********'''
     
     # print data
-    text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   x = " + str( np.round(p,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
+    text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   xh = " + str( np.round(scalpel.center,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
     window.blit(text, textRect)
     
     pygame.display.flip() # update display
