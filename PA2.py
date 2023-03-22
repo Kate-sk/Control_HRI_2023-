@@ -120,6 +120,8 @@ window.fill((255,255,255)) # white background
 
 # body = pygame.image.load('body.png')
 screenPatient = pygame.Surface((800,600))
+screenPatient.blit(pygame.image.load('body.png'), (0,0))
+window.blit(screenPatient, (0, 0))
 
 xc, yc = window.get_rect().center # window center
 pygame.display.set_caption('Patient body')
