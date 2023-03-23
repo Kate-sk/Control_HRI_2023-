@@ -135,7 +135,8 @@ scalpel_im = pygame.image.load('scalpel.png')
 scalpel_scale = (50,50)
 scalpel_im = pygame.transform.scale(scalpel_im, scalpel_scale)
 scalpel = pygame.Rect(*screenPatient.get_rect().center, 0, 0).inflate(scalpel_scale[0], scalpel_scale[1])
-
+CUT = False # are we cutting?
+pc_arr = [];
 xs = np.array(scalpel.center) # scalpel center
 
 
@@ -175,6 +176,7 @@ while run:
 
 
 
+
 # MAIN LOOP
 i = 0
 run = True
@@ -182,9 +184,18 @@ while run:
     for event in pygame.event.get(): # interrupt function
         if event.type == pygame.QUIT: # force quit with closing the window
             run = False
-        elif event.type == pygame.KEYUP:
-            if event.key == ord('q'): # force quit with q button
-                run = False
+
+        else:
+            if event.type == pygame.KEYUP:
+                if event.key == ord('q'): # force quit with q button
+                    run = False
+            else:
+                if event.type == pygame.MOUSEMOTION:
+                    if any(event.buttons):
+                        CUT = True
+                    else:
+                        CUT = False
+
             '''*********** Student should fill in ***********'''
             # tele-impedance interface / switch controllers
             '''*********** Student should fill in ***********'''
@@ -198,8 +209,18 @@ while run:
     screenPatient.blit(body_im, (0, 0))
     screenPatient.blit(scalpel_im, (scalpel.topleft[0],scalpel.topleft[1]))
 
+    # for event in pygame.event.get():
+    #     if event.type == pygame.MOUSEMOTION:
+    #         if any(event.buttons):
+    #             last = (event.pos[0] - event.rel[0], event.pos[1] - event.rel[1])
+    #             pygame.draw.line(screenPatient,(255,0,0),last, event.pos, 10)
+
+    # visualizing the cut
+    if CUT:
+        pc_arr.append(pm)
+
 	# previous endpoint position for velocity calculation
-    p_prev = p.copy()
+    p_prev = pm.copy()
 
     # log states for analysis
     state.append([t, pr[0], pr[1], p[0], p[1], dp[0], dp[1], F[0], F[1], K[0,0], K[1,1]])
@@ -216,8 +237,7 @@ while run:
 
     # increase loop counter
     i = i + 1
-    
-    
+
     
     # update individual link position
     q = model.IK(p)
@@ -226,15 +246,7 @@ while run:
     x2 = x1+l2*np.cos(q[0]+q[1])
     y2 = y1+l2*np.sin(q[0]+q[1])
     
-    '''*********** Student should fill in ***********'''
-    # calculate force manipulability
-    '''*********** Student should fill in ***********'''
-    
 
-    '''*********** Student should fill in ***********'''
-    # visualise manipulability
-    '''*********** Student should fill in ***********'''
-    
     # print data
     # text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   xh = " + str( np.round(scalpel.center,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
     # window.blit(text, textRect)
