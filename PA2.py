@@ -52,34 +52,34 @@ from scipy.spatial import distance
 
 
 
-def rectRotated(self, surface, rect, color, rotation):
-     """
-     Draws a rotated Rect.
-     surface: pygame.Surface
-     rect: pygame.Rect
-     color: pygame.Color
-     rotation: float (degrees)
-     return: np.ndarray (vertices)
-     """
-     # calculate the rotation in radians
-     rot_radians = -rotation * np.pi / 180
-     #rot_radians = -rotation
-     # calculate the points around the center of the rectangle, taking width and height into account
-     angle = math.atan2(rect.height / 2, rect.width / 2)
-     angles = [angle, -angle + np.pi, angle + np.pi, -angle]
-     radius = math.sqrt((rect.height / 2)**2 + (rect.width / 2)**2)
+# def rectRotated(self, surface, rect, color, rotation):
+#      """
+#      Draws a rotated Rect.
+#      surface: pygame.Surface
+#      rect: pygame.Rect
+#      color: pygame.Color
+#      rotation: float (degrees)
+#      return: np.ndarray (vertices)
+#      """
+#      # calculate the rotation in radians
+#      rot_radians = -rotation * np.pi / 180
+#      #rot_radians = -rotation
+#      # calculate the points around the center of the rectangle, taking width and height into account
+#      angle = math.atan2(rect.height / 2, rect.width / 2)
+#      angles = [angle, -angle + np.pi, angle + np.pi, -angle]
+#      radius = math.sqrt((rect.height / 2)**2 + (rect.width / 2)**2)
 
-     # create a numpy array of the points
-     points = np.array([
-         [rect.x + radius * math.cos(angle + rot_radians), rect.y + radius * math.sin(angle + rot_radians)]
-         for angle in angles
-     ])
+#      # create a numpy array of the points
+#      points = np.array([
+#          [rect.x + radius * math.cos(angle + rot_radians), rect.y + radius * math.sin(angle + rot_radians)]
+#          for angle in angles
+#      ])
 
-     # draw the polygon
-     pygame.draw.polygon(surface, color, points)
+#      # draw the polygon
+#      pygame.draw.polygon(surface, color, points)
 
-     # return the vertices of the rectangle
-     return points
+#      # return the vertices of the rectangle
+#      return points
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
