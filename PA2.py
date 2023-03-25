@@ -283,6 +283,10 @@ while run:
         elif CUT == True:
             drawing = True
     
+    # draw the reference line for the cut
+    pygame.draw.line(screenPatient,(0,0,0),ref_cut[0], ref_cut[1], 2)
+    
+    
     #the code to actually draw the line
     if len(pc_arr) != 0:
         for i in range(len(pc_arr)):
@@ -304,8 +308,6 @@ while run:
     #pygame.draw.polygon(screenPatient,(0,0,0),points) #a polygon which can be used as a margin
     #pygame.draw.circle(screenPatient,(0,0,0),(points[0,0],points[0,1]),3) #visualize the middle of the line
    
-    # draw the reference line for the cut
-    pygame.draw.line(screenPatient,(255,0,0),ref_cut[0], ref_cut[1], 2)
     
     #performance metric
     if pm_arr != []:
