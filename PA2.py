@@ -84,7 +84,7 @@ from scipy.spatial import distance
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
     distance_ = distance.cdist([node], nodes).min()
-    return [nodes[closest_index],distance_] #gives the coordinates of the line which is the closest to the mouse & the index
+    return [nodes[closest_index],distance_] #gives the coordinates of the line which is the closest to the mouse & the distance between the two
 
 '''ROBOT MODEL'''
 
@@ -171,26 +171,31 @@ needle_im = pygame.transform.scale(needle_im, needle_scale)
 needle = pygame.Rect(*screenPatient.get_rect().center, 0, 0).inflate(needle_scale[0], needle_scale[1])
 xn = np.array(needle.center) # scalpel center
 
+#performance feedback visualization - 
+color_acc = (255,255,255)
+
+
 # draw the reference cut line
 ref_cut = np.array([[180,450],[300,400]]) #coordinates of the reference line
 line_coor = []
 a, b = coefficients = np.polyfit([ref_cut[0,0],ref_cut[1,0]], [ref_cut[0,1],ref_cut[1,1]], 1)
  
-for x in range(ref_cut[0,0], ref_cut[1,0]):
+for x in range(ref_cut[0,0], ref_cut[1,0]+1): #calculates all the points on the reference line
     y = a*x + b
     line_coor.append([x,y])
 perf_pm = [] 
-p_line_close_pm = []    
-dis_line_pm = []
-mean_dis =[]
-draw_time = []
- 
+p_line_close_pm = []    #point on the line which is the closest to the scalpel during cutting
+dis_line_pm = []        #distance between those points = accuracy
+mean_dis = 0            #mean distance between those points
+draw_time = []          #time how long it takes to make the cut
+draw_time2 = [0] 
+
 # fonts and captions
 pygame.display.set_caption('Patient body')
 font = pygame.font.Font('freesansbold.ttf', 12) # printing text font and font size
 text = font.render('Patient body', True, (0, 0, 0), (255, 255, 255)) # printing text object
 textRect = text.get_rect()
-textRect.topleft = (10, 10) # printing text position with respect to the top-left corner of the window
+textRect.topleft = (600,10) # printing text position with respect to the top-left corner of the window
 
 clock = pygame.time.Clock() # initialise clock
 FPS = int(1/dts) # refresh rate
@@ -217,8 +222,6 @@ pm_arr = []
 last = None
 moving = False
 
-#
-
 # wait until the start button is pressed
 run = True
 while run:
@@ -226,7 +229,6 @@ while run:
         if event.type == pygame.KEYUP:
             if event.key == ord('e'): # enter the main loop after 'e' is pressed
                 run = False
-
 
 # MAIN LOOP
 i = 0
@@ -277,7 +279,7 @@ while run:
             drawing = False
             last = None
             mouse_pos = (0,0)
-            draw_time.append(None)           #so you can see the difference between time taken for different lines
+            #draw_time.append(None)           #so you can see the difference between time taken for different lines?
         elif CUT == True:
             drawing = True
     
@@ -311,15 +313,23 @@ while run:
         perf_pm = [z[0],z[1]] #place it in an array
         z = closest_node(perf_pm, line_coor) #use the function to calculate the point closest to the mouse during cutting and the distance between them
         p_line_close_pm = z[0] #point on line which is closest to the pm during cutting
-        dis_line_pm.append(z[1])
+        dis_line_pm.append(z[1]) #distance between those points
         pygame.draw.circle(screenPatient,(0,0,0),(p_line_close_pm[0],p_line_close_pm[1]),3) #visualize the point on the line which is closest to the mouse
         #calculate performance?
         mean_dis = sum(dis_line_pm)/len(dis_line_pm) #mean distance = accuracy?
         #speed = draw_time/t #--> gives the time it took to draw a line relative to the total time?
+        draw_time2 = draw_time
         
         #visualize how well the person does it?
-        #if dis_line_pm[-1] <= 2: #think of some good measure?
-            
+        if dis_line_pm[-1] <= 3: #think of some good measure?
+            color_acc = (0,255,0) #green if good
+        elif dis_line_pm[-1] > 3 and dis_line_pm[-1] <= 6:
+            color_acc = (255,100,10)
+        else:
+            color_acc = (255,0,0) #red if bad lol
+        
+    pygame.draw.rect(screenPatient,color_acc,[0,0,100,100],0)
+        
 	# previous endpoint position for velocity calculation
     p_prev = pm.copy()
 
@@ -339,7 +349,7 @@ while run:
     # increase loop counter
     i = i + 1
 
-    
+
     # update individual link position
     q = model.IK(p)
     x1 = l1*np.cos(q[0])
@@ -347,11 +357,12 @@ while run:
     x2 = x1+l2*np.cos(q[0]+q[1])
     y2 = y1+l2*np.sin(q[0]+q[1])
     
-
     # print data
-    # text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   xh = " + str( np.round(scalpel.center,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
-    # window.blit(text, textRect)
+    #text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   xh = " + str( np.round(scalpel.center,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
+    text = font.render("Time = " + str( round( draw_time2[-1] ) ) +        "      Accuracy = " + str((round( mean_dis))), True, (0, 0, 0), (255, 255, 255))
+    
     window.blit(screenPatient, (0,0))
+    window.blit(text, textRect)
 
 
     pygame.display.flip() # update display
