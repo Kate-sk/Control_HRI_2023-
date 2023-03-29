@@ -230,6 +230,7 @@ while run:
             if event.key == ord('e'): # enter the main loop after 'e' is pressed
                 run = False
 
+
 # MAIN LOOP
 i = 0
 run = True
@@ -252,6 +253,7 @@ while run:
                 else:
                     moving = False
 
+
             '''*********** Student should fill in ***********'''
             # tele-impedance interface / switch controllers
             '''*********** Student should fill in ***********'''
@@ -263,6 +265,7 @@ while run:
     screenPatient.fill((255, 255, 255))
     screenPatient.blit(body_im, (0, 0))
     screenPatient.blit(scalpel_im, (scalpel.topleft[0],scalpel.topleft[1]))
+
     needle.center = pm
     #screenPatient.blit(needle_im,(needle.topleft[0],needle.topleft[1]))
      
@@ -331,7 +334,7 @@ while run:
             color_acc = (255,0,0) #red if bad lol
         
     pygame.draw.rect(screenPatient,color_acc,[0,0,100,100],0)
-        
+
 	# previous endpoint position for velocity calculation
     p_prev = pm.copy()
 
@@ -359,6 +362,7 @@ while run:
     x2 = x1+l2*np.cos(q[0]+q[1])
     y2 = y1+l2*np.sin(q[0]+q[1])
     
+
     # print data
     #text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   xh = " + str( np.round(scalpel.center,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
     text = font.render("Time = " + str( round( draw_time2[-1] ) ) +        "      Accuracy = " + str((round( mean_dis))), True, (0, 0, 0), (255, 255, 255))
