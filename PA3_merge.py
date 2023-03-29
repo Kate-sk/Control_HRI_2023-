@@ -345,10 +345,6 @@ while run:
     #         if any(event.buttons):
     #             last = (event.pos[0] - event.rel[0], event.pos[1] - event.rel[1])
     #             pygame.draw.line(screenPatient,(255,0,0),last, event.pos, 10)
-
-    # visualizing the cut
-    if CUT:
-        pc_arr.append(pm)
     
     ##Update old samples for velocity computation
     xhold = xh
