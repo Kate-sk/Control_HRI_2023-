@@ -51,35 +51,29 @@ import pygame
 from scipy.spatial import distance
 
 
+class Vector: #creates vectors
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def __sub__(self, other):
+        return Vector(self.x - other.x, self.y - other.y)
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y
+    def norm(self):
+        return self.dot(self)**0.5
+    def normalized(self):
+        norm = self.norm()
+        return Vector(self.x / norm, self.y / norm)
+    def perp(self):
+        return Vector(1, -self.x / self.y)
+    def __mul__(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar)
+    def __str__(self):
+        #return f'({self.x}, {self.y})'
+        return np.array(self.x,self.y)
 
-# def rectRotated(self, surface, rect, color, rotation):
-#      """
-#      Draws a rotated Rect.
-#      surface: pygame.Surface
-#      rect: pygame.Rect
-#      color: pygame.Color
-#      rotation: float (degrees)
-#      return: np.ndarray (vertices)
-#      """
-#      # calculate the rotation in radians
-#      rot_radians = -rotation * np.pi / 180
-#      #rot_radians = -rotation
-#      # calculate the points around the center of the rectangle, taking width and height into account
-#      angle = math.atan2(rect.height / 2, rect.width / 2)
-#      angles = [angle, -angle + np.pi, angle + np.pi, -angle]
-#      radius = math.sqrt((rect.height / 2)**2 + (rect.width / 2)**2)
-
-#      # create a numpy array of the points
-#      points = np.array([
-#          [rect.x + radius * math.cos(angle + rot_radians), rect.y + radius * math.sin(angle + rot_radians)]
-#          for angle in angles
-#      ])
-
-#      # draw the polygon
-#      pygame.draw.polygon(surface, color, points)
-
-#      # return the vertices of the rectangle
-#      return points
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
@@ -169,11 +163,10 @@ needle_im = pygame.image.load('needle.png')
 needle_scale = (50,50)
 needle_im = pygame.transform.scale(needle_im, needle_scale)
 needle = pygame.Rect(*screenPatient.get_rect().center, 0, 0).inflate(needle_scale[0], needle_scale[1])
-xn = np.array(needle.center) # scalpel center
+xn = np.array(needle.center) # needle center
 
 #performance feedback visualization - 
 color_acc = (255,255,255)
-
 
 # draw the reference cut line
 ref_cut = np.array([[180,450],[300,400]]) #coordinates of the reference line
@@ -190,6 +183,29 @@ mean_dis = 0            #mean distance between those points
 draw_time = []          #time how long it takes to make the cut
 draw_time2 = [0] 
 
+# draw reference lines for the sewing
+line_s = Vector(ref_cut[0,0],ref_cut[0,1]) #line start coordinate
+line_e = Vector(ref_cut[1,0],ref_cut[1,1]) 
+line_v = line_e-line_s #vector of the line
+perp_normed = line_v.perp().normalized() #normalized perpendicular vector from the line
+p_dist = 10 #distance of the points from the reference line
+step_point = round(121/6)
+
+p1 = line_e + perp_normed*p_dist
+p2 = line_e - perp_normed*p_dist
+p3 = Vector(line_coor[121-step_point][0],line_coor[121-step_point][1]) + perp_normed*p_dist
+p4 = Vector(line_coor[121-step_point][0],line_coor[121-step_point][1]) - perp_normed*p_dist
+p5 = Vector(line_coor[121-step_point*2][0],line_coor[121-step_point*2][1]) + perp_normed*p_dist
+p6 = Vector(line_coor[121-step_point*2][0],line_coor[121-step_point*2][1]) - perp_normed*p_dist
+p7 = Vector(line_coor[121-step_point*3][0],line_coor[121-step_point*3][1]) + perp_normed*p_dist
+p8 = Vector(line_coor[121-step_point*3][0],line_coor[121-step_point*3][1]) - perp_normed*p_dist
+p9 = Vector(line_coor[121-step_point*4][0],line_coor[121-step_point*4][1]) + perp_normed*p_dist
+p10 = Vector(line_coor[121-step_point*4][0],line_coor[121-step_point*4][1]) - perp_normed*p_dist
+p11 = Vector(line_coor[121-step_point*5][0],line_coor[121-step_point*5][1]) + perp_normed*p_dist
+p12 = Vector(line_coor[121-step_point*5][0],line_coor[121-step_point*5][1]) - perp_normed*p_dist
+p13 = Vector(line_coor[121-121][0],line_coor[121-121][1]) + perp_normed*p_dist
+p14 = Vector(line_coor[121-121][0],line_coor[121-121][1]) - perp_normed*p_dist
+
 # fonts and captions
 pygame.display.set_caption('Patient body')
 font = pygame.font.Font('freesansbold.ttf', 12) # printing text font and font size
@@ -205,12 +221,10 @@ t = 0.0 # time
 pm = np.zeros(2) # mouse position
 pr = np.zeros(2) # reference endpoint position
 p = np.array([0.1,0.1]) # actual endpoint position
-
 dp = np.zeros(2) # actual endpoint velocity
 F = np.zeros(2) # endpoint force
 q = np.zeros(2) # joint position
 p_prev = np.zeros(2) # previous endpoint position
-
 m = 0.5 # endpoint mass -- scalpel mass 22g  + robot's end effector
 i = 0 # loop counter
 state = [] # state vector
@@ -223,6 +237,9 @@ drawing = False
 pm_arr = []
 last = None
 moving = False
+
+#second task variables
+task2 = False
 
 # wait until the start button is pressed
 run = True
@@ -239,11 +256,13 @@ while run:
     for event in pygame.event.get(): # interrupt function
         if event.type == pygame.QUIT: # force quit with closing the window
             run = False
-
         else:
             if event.type == pygame.KEYUP:
                 if event.key == ord('q'): # force quit with q button
                     run = False
+            elif event.type == pygame.KEYUP:
+                if event.key == ord('s'): #key to start with the new test
+                    task2 = True
             else:
                 if event.type == pygame.MOUSEMOTION:
                     moving = True
@@ -253,20 +272,16 @@ while run:
                     CUT = False
                 else:
                     moving = False
-
-
             '''*********** Student should fill in ***********'''
             # tele-impedance interface / switch controllers
             '''*********** Student should fill in ***********'''
     
-    
     # making backgrounds and represent a tool -- scalpel and needle
     pm = np.array(pygame.mouse.get_pos())  # in VRenv frame
-    scalpel.center = pm
+    scalpel.bottomleft = pm
     screenPatient.fill((255, 255, 255))
     screenPatient.blit(body_im, (0, 0))
     screenPatient.blit(scalpel_im, (scalpel.topleft[0],scalpel.topleft[1]))
-
     needle.center = pm
     #screenPatient.blit(needle_im,(needle.topleft[0],needle.topleft[1]))
      
@@ -287,14 +302,32 @@ while run:
         elif CUT == True:
             drawing = True
     
-    # draw the reference line for the cut
     pygame.draw.line(screenPatient,(0,0,0),ref_cut[0], ref_cut[1], 2)
+    
+    # draw the reference line for the cut
+    if task2 == True:
+        pygame.draw.circle(screenPatient,(0,0,0),(p1.x,p1.y),3)
+    
+    #pygame.draw.circle(screenPatient,(0,0,0),(p1.x,p1.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p2.x,p2.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p3.x,p3.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p4.x,p4.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p5.x,p5.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p6.x,p6.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p7.x,p7.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p8.x,p8.y),3)    
+    pygame.draw.circle(screenPatient,(0,0,0),(p9.x,p9.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p10.x,p10.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p11.x,p11.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p12.x,p12.y),3)
+    pygame.draw.circle(screenPatient,(0,0,0),(p13.x,p13.y),3)
+    #pygame.draw.circle(screenPatient,(0,0,0),(p14.x,p14.y),3)
     
     
     #the code to actually draw the line
     if len(pc_arr) != 0:
         for i in range(len(pc_arr)):
-            k = i-1
+            k = i #k = i - 1
             pygame.draw.line(screenPatient,(255,0,0),pc_arr[k], pm_arr[k], 2)
     
     #find the position and rotation of the reference line to define
@@ -312,7 +345,7 @@ while run:
     #pygame.draw.polygon(screenPatient,(0,0,0),points) #a polygon which can be used as a margin
     #pygame.draw.circle(screenPatient,(0,0,0),(points[0,0],points[0,1]),3) #visualize the middle of the line
    
-    
+    #definitely for task 2 we should seperate the different lines for the performance!
     #performance metric
     if pm_arr != []:
         z = pm_arr[-1] #get the mouse position of the line drawing
@@ -335,7 +368,7 @@ while run:
             color_acc = (255,0,0) #red if bad lol
         
     pygame.draw.rect(screenPatient,color_acc,[0,0,100,100],0)
-
+        
 	# previous endpoint position for velocity calculation
     p_prev = pm.copy()
 
@@ -363,7 +396,6 @@ while run:
     x2 = x1+l2*np.cos(q[0]+q[1])
     y2 = y1+l2*np.sin(q[0]+q[1])
     
-
     # print data
     #text = font.render("FPS = " + str( round( clock.get_fps() ) ) + "   K = " + str( [K[0,0],K[1,1]] ) + " N/m" + "   xh = " + str( np.round(scalpel.center,3) ) + " m" + "   F = " + str( np.round(F,0) ) + " N", True, (0, 0, 0), (255, 255, 255))
     text = font.render("Time = " + str( round( draw_time2[-1] ) ) +        "      Accuracy = " + str((round( mean_dis))), True, (0, 0, 0), (255, 255, 255))
@@ -382,3 +414,10 @@ while run:
         break
 
 pygame.quit() # stop pygame
+
+
+
+
+
+
+
