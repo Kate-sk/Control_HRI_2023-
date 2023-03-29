@@ -205,10 +205,12 @@ t = 0.0 # time
 pm = np.zeros(2) # mouse position
 pr = np.zeros(2) # reference endpoint position
 p = np.array([0.1,0.1]) # actual endpoint position
+
 dp = np.zeros(2) # actual endpoint velocity
 F = np.zeros(2) # endpoint force
 q = np.zeros(2) # joint position
 p_prev = np.zeros(2) # previous endpoint position
+
 m = 0.5 # endpoint mass -- scalpel mass 22g  + robot's end effector
 i = 0 # loop counter
 state = [] # state vector
@@ -229,7 +231,6 @@ while run:
         if event.type == pygame.KEYUP:
             if event.key == ord('e'): # enter the main loop after 'e' is pressed
                 run = False
-
 
 # MAIN LOOP
 i = 0
@@ -381,10 +382,3 @@ while run:
         break
 
 pygame.quit() # stop pygame
-
-
-
-
-
-
-
