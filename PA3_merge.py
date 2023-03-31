@@ -54,6 +54,9 @@ import time
 from scipy.spatial import distance
 from numpy import ones,vstack
 from numpy.linalg import lstsq
+from tabulate import tabulate
+import pandas as pd
+
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
@@ -319,16 +322,21 @@ window_scale = 3
 ''' 800 ??\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'''
 
 
-# drawing cut line
+#first task -- drawing cut line 
 drawing = False
 pm_arr = []
 last = None
 moving = False
+time_task1 = []
 
 #second task
 task2 = False
 i2 = 0
 dis_line_task2 = []
+time_task2 = []
+time_task22 = []
+tot_t = []
+inter = []
 
 # wait until the start button is pressed
 run = True
@@ -422,7 +430,8 @@ while run:
     F_env[1] = 2*np.cos(3*t-1)**2 + np.sin(t-2) - 2* np.sin(2*t-2)**2 - np.cos(t/3)**2 /2 
 
     #fe += 300*F_env #do it with and without
-
+    
+    tot_t.append(t)
     
     # for event in pygame.event.get():
     #     if event.type == pygame.MOUSEMOTION:
@@ -517,7 +526,7 @@ while run:
         pygame.draw.circle(screenPatient,(0,0,0),(p13.x,p13.y),3)
         #pygame.draw.circle(screenPatient,(0,0,0),(p14.x,p14.y),3)
         
-        #can be turned on to see 'perfect' lines!
+        #can be turned on to see 'perfect' sewing lines!
         #pygame.draw.line(screenPatient,(255,0,0),p13_line_coor[0], p13_line_coor[-1], 2)
         #pygame.draw.line(screenPatient,(255,0,0),p11_line_coor[0], p11_line_coor[-1], 2)
         #pygame.draw.line(screenPatient,(255,0,0),p9_line_coor[0], p9_line_coor[-1], 2)
@@ -534,7 +543,8 @@ while run:
     
     #performance of task 1
     if pm_arr != [] and task2 == False and drawing == True:
-        z = pm_arr[-1] #get the mouse position of the line drawing
+        #z = pm_arr[-1] #get the mouse position of the line drawing
+        z = xh
         perf_pm = [z[0],z[1]] #place it in an array
         z = closest_node(perf_pm, line_coor) #use the function to calculate the point closest to the mouse during cutting and the distance between them
         p_line_close_pm = z[0] #point on line which is closest to the pm during cutting
@@ -552,25 +562,32 @@ while run:
         else:
             color_acc = (255,0,0) #red if bad lol
         pygame.draw.rect(screenPatient,color_acc,[0,0,100,100],0)
-        time_task1 = t
+        time_task1.append(t)
 
     #performance of task 2
     if pm_arr != [] and task2 == True:
-        time_task2 = t
+        time_task2.append(t)
+        if drawing == True:
+            #inter.append([pm_arr[-1][0],pm_arr[-1][1]])
+            inter.append(xh)
+        elif drawing == False:
+            inter = []
 
     if pm_arr != [] and task2 == True and drawing == True:
-        pm_task2 = pm_arr[-1][0],pm_arr[-1][1]    #mouse position
+        time_task22.append(t)
+        #pm_task2 = pm_arr[-1][0],pm_arr[-1][1]    #haptic position
+        pm_task2 = xh
         #find out 
-        z = closest_node(pm_task2, points) #use the function to calculate the point closest to the mouse during cutting and the distance between them
-        right_point = z[2] #0 = p2, 11 = p13        #so which sew point is the closest to the mouse, use this to calculate performance towards the right line
+        z = closest_node(inter[0], points) #use the function to calculate the point closest to the mouse during cutting and the distance between them
+        #right_point = z[2] #0 = p2, 11 = p13        #so which sew point is the closest to the mouse, use this to calculate performance towards the right line
         z3 = z[2]       
-        
+        print(z3)
         #line1 = p13-p12
-        if z3 == 10 or z3 == 11:
-            z2 = closest_node(pm_task2, p13_line_coor)
-            dis_line_task2.append(z2[1])
+        if z3 == 10 or z3 == 11: #check if the haptic is closest to either one of the endpoints of the first line
+            z2 = closest_node(pm_task2, p13_line_coor) #calculate the distance between haptic and the first line
+            dis_line_task2.append(z2[1]) #add the distance to the performance line
         #line2 = p11-p10
-        if z3 == 8 or z3 == 9:
+        if z3 == 8 or z3 == 9: #check if the mouse is closest to either one of the endpoints of the second line
             z2 = closest_node(pm_task2, p11_line_coor)
             dis_line_task2.append(z2[1])
         #line3 = p9-p8
@@ -589,7 +606,7 @@ while run:
         if z3 == 0 or z3 == 1:
             z2 = closest_node(pm_task2, p3_line_coor)
             dis_line_task2.append(z2[1])
-                
+            
     ##Fuse it back together
     window.blit(screenPatient, (0,0))
     #window.blit(screenVR, (600,0))
@@ -613,36 +630,89 @@ pygame.display.quit()
 pygame.quit()
 
 
+'''Performance Analysis'''
+#t1 = time start drawing until you stop drawing
+#t2 = time start drawing until the screen is closed 
+t1 = time_task1[-1]
+t2 = time_task2[-1]-time_task2[0]
+
+#distance to the 'perfect' line in pixels
+perf1 = dis_line_pm
+perf2 = dis_line_task2
+
+#mean distance to 'perfect' line
+mean_perf1 = np.mean(dis_line_pm)
+mean_perf2 = np.mean(dis_line_task2)
+
+#std
+std_perf1 = np.std(dis_line_pm)
+std_perf2 = np.std(dis_line_task2)
+
+#rms
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
+
+zeros_task1 = np.zeros((len(dis_line_pm),1))
+zeros_task2 = np.zeros((len(dis_line_task2),1))
+
+rms_perf1 = rmse(zeros_task1,dis_line_pm)
+rms_perf2 = rmse(zeros_task2,dis_line_task2)
+
+#array with the results
+#mean - std - rms - time
+results = np.array([[mean_perf1,mean_perf2],[std_perf1,std_perf2],[rms_perf1,rms_perf2],[t1,t2]])
+
+#table with results
+results_table = [['','Task 1','Task 2'],
+                 ['Mean',mean_perf1,mean_perf2],
+                 ['Std',std_perf1,std_perf2],
+                 ['RMS',rms_perf1,rms_perf2],
+                 ['Time',t1,t2]]
+print(tabulate(results_table))
+
+results_table2 = {'':['Mean','Std','RMS','Time'],
+                  'Task 1': [mean_perf1,std_perf1,rms_perf1,t1],
+                  'Task 2': [mean_perf2,std_perf2,rms_perf2,t2]}
+df = pd.DataFrame(results_table2)
+df.to_csv('Sample.csv', index = False, header = True)
+
+#plot together the performance - accuracy against time
+plt.plot(time_task1,perf1, label="task 1")
+plt.plot(time_task22,perf2, label="task 2")
+plt.ylabel("Accuracy [pixels]")
+plt.xlabel("t [s]")
+plt.title("The performance for task 1 and 2 against time")
+plt.legend(loc="upper right")
+plt.show()
 
 
 '''ANALYSIS'''
 
-state = np.array(state)
+#state = np.array(state)
 
+#plt.figure(3)
+#plt.subplot(411)
+#plt.title("VARIABLES")
+#plt.plot(state[:,0],state[:,1],"b",label="x")
+#plt.plot(state[:,0],state[:,2],"r",label="y")
+#plt.legend()
+#plt.ylabel("xm [m]")
 
-plt.figure(3)
-plt.subplot(411)
-plt.title("VARIABLES")
-plt.plot(state[:,0],state[:,1],"b",label="x")
-plt.plot(state[:,0],state[:,2],"r",label="y")
-plt.legend()
-plt.ylabel("xm [m]")
+#plt.subplot(412)
+#plt.plot(state[:,0],state[:,3],"b")
+#plt.plot(state[:,0],state[:,4],"r")
+#plt.ylabel("xh [m]")
 
-plt.subplot(412)
-plt.plot(state[:,0],state[:,3],"b")
-plt.plot(state[:,0],state[:,4],"r")
-plt.ylabel("xh [m]")
+#plt.subplot(413)
+#plt.plot(state[:,0],state[:,7],"b")
+#plt.plot(state[:,0],state[:,8],"r")
+#plt.ylabel("F [N]")
 
-plt.subplot(413)
-plt.plot(state[:,0],state[:,7],"b")
-plt.plot(state[:,0],state[:,8],"r")
-plt.ylabel("F [N]")
+#plt.subplot(414)
+#plt.plot(state[:,0],state[:,9],"c")
+#plt.plot(state[:,0],state[:,10],"m")
+#plt.ylabel("K [N/m]")
+#plt.xlabel("t [s]")
 
-plt.subplot(414)
-plt.plot(state[:,0],state[:,9],"c")
-plt.plot(state[:,0],state[:,10],"m")
-plt.ylabel("K [N/m]")
-plt.xlabel("t [s]")
-
-plt.tight_layout()
+#plt.tight_layout()
 
