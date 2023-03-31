@@ -52,11 +52,36 @@ import sys, serial, glob
 from serial.tools import list_ports
 import time
 from scipy.spatial import distance
+from numpy import ones,vstack
+from numpy.linalg import lstsq
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
     distance_ = distance.cdist([node], nodes).min()
-    return [nodes[closest_index],distance_] #gives the coordinates of the line which is the closest to the mouse & the distance between the two
+    return [nodes[closest_index],distance_,closest_index] #gives the coordinates of the line which is the closest to the mouse & the distance between the two
+
+class Vector: #creates vectors
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def __sub__(self, other):
+        return Vector(self.x - other.x, self.y - other.y)
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    def dot(self, other):
+        return self.x * other.x + self.y * other.y
+    def norm(self):
+        return self.dot(self)**0.5
+    def normalized(self):
+        norm = self.norm()
+        return Vector(self.x / norm, self.y / norm)
+    def perp(self):
+        return Vector(1, -self.x / self.y)
+    def __mul__(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar)
+    def __str__(self):
+        #return f'({self.x}, {self.y})'
+        return np.array(self.x,self.y)
 
 
 ##################### General Pygame Init #####################
@@ -121,7 +146,6 @@ plt.show()
 K1 = .5       ##Stiffness between cursor and haptic display
 b = .8       ##Viscous of the pseudohaptic display
 
-
 ##################### Define sprites #####################
 
 ##define sprites
@@ -161,8 +185,59 @@ p_line_close_pm = []    #point on the line which is the closest to the scalpel d
 dis_line_pm = []        #distance between those points = accuracy
 mean_dis = 0            #mean distance between those points
 draw_time = []          #time how long it takes to make the cut
-draw_time2 = [0] 
 
+# draw reference lines for the sewing
+line_s = Vector(ref_cut[0,0],ref_cut[0,1]) #line start coordinate
+line_e = Vector(ref_cut[1,0],ref_cut[1,1]) 
+line_v = line_e-line_s #vector of the line
+perp_normed = line_v.perp().normalized() #normalized perpendicular vector from the line
+p_dist = 10 #distance of the points from the reference line
+step_point = round(121/6)
+
+p1 = line_e + perp_normed*p_dist
+p2 = line_e - perp_normed*p_dist
+p3 = Vector(line_coor[121-step_point][0],line_coor[121-step_point][1]) + perp_normed*p_dist
+p4 = Vector(line_coor[121-step_point][0],line_coor[121-step_point][1]) - perp_normed*p_dist
+p5 = Vector(line_coor[121-step_point*2][0],line_coor[121-step_point*2][1]) + perp_normed*p_dist
+p6 = Vector(line_coor[121-step_point*2][0],line_coor[121-step_point*2][1]) - perp_normed*p_dist
+p7 = Vector(line_coor[121-step_point*3][0],line_coor[121-step_point*3][1]) + perp_normed*p_dist
+p8 = Vector(line_coor[121-step_point*3][0],line_coor[121-step_point*3][1]) - perp_normed*p_dist
+p9 = Vector(line_coor[121-step_point*4][0],line_coor[121-step_point*4][1]) + perp_normed*p_dist
+p10 = Vector(line_coor[121-step_point*4][0],line_coor[121-step_point*4][1]) - perp_normed*p_dist
+p11 = Vector(line_coor[121-step_point*5][0],line_coor[121-step_point*5][1]) + perp_normed*p_dist
+p12 = Vector(line_coor[121-step_point*5][0],line_coor[121-step_point*5][1]) - perp_normed*p_dist
+p13 = Vector(line_coor[121-121][0],line_coor[121-121][1]) + perp_normed*p_dist
+p14 = Vector(line_coor[121-121][0],line_coor[121-121][1]) - perp_normed*p_dist
+points = np.array([[p2.x,p2.y],[p3.x,p3.y],[p4.x,p4.y],[p5.x,p5.y],[p6.x,p6.y],
+                   [p7.x,p7.y],[p8.x,p8.y],[p9.x,p9.y],[p10.x,p10.y],[p11.x,p11.y],
+                   [p12.x,p12.y],[p13.x,p13.y]]) #make an array with the coordinates of all the points for the performance metric
+
+
+def poly(points3,points3x,points3y):
+    x_coords, y_coords = zip(*points3)
+    A = vstack([x_coords,ones(len(x_coords))]).T
+    m, c = lstsq(A, y_coords)[0]
+    polynomial = np.poly1d([m,c])
+    x_axis = np.linspace(points3x,points3y,20)
+    y_axis = polynomial(x_axis)
+    line_coor2 = np.transpose(np.vstack((x_axis, y_axis)))
+    return line_coor2
+
+
+#calculate reference lines for in between the points
+points_13_12 = [(p13.x,p13.y),(p12.x,p12.y)]
+points_11_10 = [(p11.x,p11.y),(p10.x,p10.y)]
+points_9_8 = [(p9.x,p9.y),(p8.x,p8.y)]
+points_7_6 = [(p7.x,p7.y),(p6.x,p6.y)]
+points_5_4 = [(p5.x,p5.y),(p4.x,p4.y)]
+points_3_2 = [(p3.x,p3.y),(p2.x,p2.y)]
+
+p13_line_coor = poly(points_13_12,p13.x,p12.x)
+p11_line_coor = poly(points_11_10,p11.x,p10.x)
+p9_line_coor = poly(points_9_8,p9.x,p8.x)
+p7_line_coor = poly(points_7_6,p7.x,p6.x)
+p5_line_coor = poly(points_5_4,p5.x,p4.x)
+p3_line_coor = poly(points_3_2,p3.x,p2.x)
 
 xh = np.array(haptic.center)
 
@@ -239,7 +314,6 @@ i = 0 # loop counter
 state = [] # state vector
 
 
-
  # conversion from meters to pixels
 window_scale = 3 
 ''' 800 ??\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'''
@@ -250,6 +324,11 @@ drawing = False
 pm_arr = []
 last = None
 moving = False
+
+#second task
+task2 = False
+i2 = 0
+dis_line_task2 = []
 
 # wait until the start button is pressed
 run = True
@@ -288,6 +367,8 @@ while run:
                 debugToggle = not debugToggle
             if event.key == ord('r'):
                 robotToggle = not robotToggle
+            if event.key == ord('s'):
+                task2 = True
         else:
             if event.type == pygame.MOUSEMOTION:
                 moving = True
@@ -312,8 +393,11 @@ while run:
         #########Convert it into position#########
         device_position = device.get_device_position(motorAngle)
         xh = np.array(device_position)*1e3*window_scale
-        xh[0] = np.round(-xh[0]+300)
-        xh[1] = np.round(xh[1]-60)
+        #xh[0] = np.round(-xh[0]+300)
+        #xh[1] = np.round(xh[1]-60)
+        
+        #xh[0] = np.round(-xh[0]+300)
+        #xh[1] = np.round(xh[1])
         xm = xh     ##Mouse position is not used
          
     else:
@@ -337,7 +421,7 @@ while run:
     F_env[0] = np.sin(2*t+1)**3-np.cos(5*t)**2 - np.sin(3*t - 1)**5+np.cos(3*t)/2
     F_env[1] = 2*np.cos(3*t-1)**2 + np.sin(t-2) - 2* np.sin(2*t-2)**2 - np.cos(t/3)**2 /2 
 
-    fe += 300*F_env
+    #fe += 300*F_env #do it with and without
 
     
     # for event in pygame.event.get():
@@ -372,7 +456,11 @@ while run:
         dxh = dxh + ddxh*dt
         xh = xh + dxh*dt
         t += dt
-        
+    
+    #I tried to get the mouse and haptic on the same position while in rest
+    xh[0] = xh[0] - 7
+    xh[1] = xh[1] + 8
+    
     haptic.bottomleft = xh 
     
     ######### Graphical output #########
@@ -382,21 +470,23 @@ while run:
     
     ### Body and scalpel visualisation
     screenPatient.blit(body_im, (0, 0))
-    screenPatient.blit(scalpel_im,(haptic.topleft[0],haptic.topleft[1]))
-    pygame.draw.line(screenPatient, (0, 0, 0), (haptic.bottomleft),(xm))#2*k*(xm-xh)))
+    if task2 == False:
+        screenPatient.blit(scalpel_im,(haptic.topleft[0],haptic.topleft[1]))
+    else: 
+        screenPatient.blit(needle_im,(needle.topleft[0],needle.topleft[1]))
+
+    pygame.draw.line(screenPatient, cDarkblue, (haptic.bottomleft),(xm))#2*k*(xm-xh)))
     
     needle.bottomleft = xh
     #screenPatient.blit(needle_im,(needle.topleft[0],needle.topleft[1]))
     
-    
     #code to draw a continuous cut
     if moving == True:
         if drawing == True:
-            mouse_pos = xh
+            mouse_pos = xh                   #use endpoint position for the drawing
             if last is not None:
-                print('last = ', last)
                 pc_arr.append(last)          #safe 'last' data points for all cuts
-                pm_arr.append(mouse_pos)     #safe 'mouse' data points all cuts
+                pm_arr.append(mouse_pos)     #safe 'virtual endpoint' data points all cuts
                 draw_time.append(t)
             last = mouse_pos
         if CUT == False:
@@ -410,26 +500,96 @@ while run:
     # draw the reference line for the cut
     pygame.draw.line(screenPatient,(0,0,0),ref_cut[0], ref_cut[1], 2)
     
+    # draw the reference line for the cut
+    if task2 == True:
+        #pygame.draw.circle(screenPatient,(0,0,0),(p1.x,p1.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p2.x,p2.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p3.x,p3.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p4.x,p4.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p5.x,p5.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p6.x,p6.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p7.x,p7.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p8.x,p8.y),3)    
+        pygame.draw.circle(screenPatient,(0,0,0),(p9.x,p9.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p10.x,p10.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p11.x,p11.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p12.x,p12.y),3)
+        pygame.draw.circle(screenPatient,(0,0,0),(p13.x,p13.y),3)
+        #pygame.draw.circle(screenPatient,(0,0,0),(p14.x,p14.y),3)
+        
+        #can be turned on to see 'perfect' lines!
+        #pygame.draw.line(screenPatient,(255,0,0),p13_line_coor[0], p13_line_coor[-1], 2)
+        #pygame.draw.line(screenPatient,(255,0,0),p11_line_coor[0], p11_line_coor[-1], 2)
+        #pygame.draw.line(screenPatient,(255,0,0),p9_line_coor[0], p9_line_coor[-1], 2)
+        #pygame.draw.line(screenPatient,(255,0,0),p7_line_coor[0], p7_line_coor[-1], 2)
+        #pygame.draw.line(screenPatient,(255,0,0),p5_line_coor[0], p5_line_coor[-1], 2)
+        #pygame.draw.line(screenPatient,(255,0,0),p3_line_coor[0], p3_line_coor[-1], 2)
+
     
     #the code to actually draw the line
     if len(pm_arr) != 0:
         for i in range(len(pm_arr)):
-            '''
-            print('\ni = ', i)
-
-            #print('\npc_arr = ', pc_arr)
-            print('\nlength pc_arr = ', len(pc_arr))
-            print('pc_arr[i] = ', pc_arr[i])
-
-            print('\nlength pm_arr = ', len(pm_arr))
-            print('pm_arr[i] = ', pm_arr[i])
-            '''
-            #k = i-1
             pygame.draw.line(screenPatient,(255,0,0),pc_arr[i], pm_arr[i], 2)
     
     
+    #performance of task 1
+    if pm_arr != [] and task2 == False and drawing == True:
+        z = pm_arr[-1] #get the mouse position of the line drawing
+        perf_pm = [z[0],z[1]] #place it in an array
+        z = closest_node(perf_pm, line_coor) #use the function to calculate the point closest to the mouse during cutting and the distance between them
+        p_line_close_pm = z[0] #point on line which is closest to the pm during cutting
+        dis_line_pm.append(z[1]) #distance between those points
+        #pygame.draw.circle(screenPatient,(0,0,0),(p_line_close_pm[0],p_line_close_pm[1]),3) #visualize the point on the line which is closest to the mouse
+        #calculate performance?
+        mean_dis = sum(dis_line_pm)/len(dis_line_pm) #mean distance = accuracy?
+        #speed = draw_time/t #--> gives the time it took to draw a line relative to the total time?
+        
+        #visualize how well the person does it?
+        if dis_line_pm[-1] <= 3: #think of some good measure?
+            color_acc = (0,255,0) #green if good
+        elif dis_line_pm[-1] > 3 and dis_line_pm[-1] <= 6:
+            color_acc = (255,100,10)
+        else:
+            color_acc = (255,0,0) #red if bad lol
+        pygame.draw.rect(screenPatient,color_acc,[0,0,100,100],0)
+        time_task1 = t
 
+    #performance of task 2
+    if pm_arr != [] and task2 == True:
+        time_task2 = t
 
+    if pm_arr != [] and task2 == True and drawing == True:
+        pm_task2 = pm_arr[-1][0],pm_arr[-1][1]    #mouse position
+        #find out 
+        z = closest_node(pm_task2, points) #use the function to calculate the point closest to the mouse during cutting and the distance between them
+        right_point = z[2] #0 = p2, 11 = p13        #so which sew point is the closest to the mouse, use this to calculate performance towards the right line
+        z3 = z[2]       
+        
+        #line1 = p13-p12
+        if z3 == 10 or z3 == 11:
+            z2 = closest_node(pm_task2, p13_line_coor)
+            dis_line_task2.append(z2[1])
+        #line2 = p11-p10
+        if z3 == 8 or z3 == 9:
+            z2 = closest_node(pm_task2, p11_line_coor)
+            dis_line_task2.append(z2[1])
+        #line3 = p9-p8
+        if z3 == 6 or z3 == 7:
+            z2 = closest_node(pm_task2, p9_line_coor)
+            dis_line_task2.append(z2[1])
+        #line4 = p7-p6
+        if z3 == 4 or z3 == 5:
+            z2 = closest_node(pm_task2, p7_line_coor)
+            dis_line_task2.append(z2[1])    
+        #line5 = p5-p4
+        if z3 == 2 or z3 == 3:
+            z2 = closest_node(pm_task2, p5_line_coor)
+            dis_line_task2.append(z2[1])
+        #line6 = p9-p8
+        if z3 == 0 or z3 == 1:
+            z2 = closest_node(pm_task2, p3_line_coor)
+            dis_line_task2.append(z2[1])
+                
     ##Fuse it back together
     window.blit(screenPatient, (0,0))
     #window.blit(screenVR, (600,0))
