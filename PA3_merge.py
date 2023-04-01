@@ -643,7 +643,7 @@ pygame.quit()
 #cut the time to stop at the appropriate time
 #get the index of the last data point you need
 cut_t = np.where(np.array(time_task2) == time_task22[-1])
-time_task2 = time_task2[0:cut_t+1]
+time_task2 = time_task2[0:cut_t[0][0]+1]
 
 t1 = time_task1[-1]-time_task1[0]
 t2 = time_task2[-1]-time_task2[0]
