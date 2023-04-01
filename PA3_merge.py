@@ -429,7 +429,7 @@ while run:
     F_env[0] = np.sin(2*t+1)**3-np.cos(5*t)**2 - np.sin(3*t - 1)**5+np.cos(3*t)/2
     F_env[1] = 2*np.cos(3*t-1)**2 + np.sin(t-2) - 2* np.sin(2*t-2)**2 - np.cos(t/3)**2 /2 
 
-    #fe += 300*F_env #do it with and without
+    fe += 300*F_env #do it with and without
     
     tot_t.append(t)
     
@@ -581,7 +581,6 @@ while run:
         z = closest_node(inter[0], points) #use the function to calculate the point closest to the mouse during cutting and the distance between them
         #right_point = z[2] #0 = p2, 11 = p13        #so which sew point is the closest to the mouse, use this to calculate performance towards the right line
         z3 = z[2]       
-        print(z3)
         #line1 = p13-p12
         if z3 == 10 or z3 == 11: #check if the haptic is closest to either one of the endpoints of the first line
             z2 = closest_node(pm_task2, p13_line_coor) #calculate the distance between haptic and the first line
@@ -672,9 +671,13 @@ print(tabulate(results_table))
 
 results_table2 = {'':['Mean','Std','RMS','Time'],
                   'Task 1': [mean_perf1,std_perf1,rms_perf1,t1],
-                  'Task 2': [mean_perf2,std_perf2,rms_perf2,t2]}
+                  'Task 2': [mean_perf2,std_perf2,rms_perf2,t2]}#,
+                  #'',
+                  #'Perf1': [perf1],
+                  #'Perf2': [perf2]}
+
 df = pd.DataFrame(results_table2)
-df.to_csv('Sample.csv', index = False, header = True)
+df.to_csv('Sample2.csv', index = False, header = True, sep=';', decimal=",")
 
 #plot together the performance - accuracy against time
 plt.plot(time_task1,perf1, label="task 1")
