@@ -58,7 +58,7 @@ import pandas as pd
 
 #use this if you want to save the data in a specific path
 #else just type the file name as for example "Sample.csv"
-path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con1_perturbation/Trial1.csv"
+path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con2_perturbation/Trial10.csv"
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
@@ -341,7 +341,6 @@ time_task22 = []
 tot_t = []
 inter = []
 pm_task2_array = []
-
 
 # wait until the start button is pressed
 run = True
@@ -643,7 +642,9 @@ pygame.quit()
 #cut the time to stop at the appropriate time
 #get the index of the last data point you need
 cut_t = np.where(np.array(time_task2) == time_task22[-1])
-time_task2 = time_task2[0:cut_t[0][0]+1]
+cut_t2 = np.where(np.array(time_task2) == time_task22[0])
+
+time_task2 = time_task2[cut_t2[0][0]:cut_t[0][0]+1]
 
 t1 = time_task1[-1]-time_task1[0]
 t2 = time_task2[-1]-time_task2[0]
