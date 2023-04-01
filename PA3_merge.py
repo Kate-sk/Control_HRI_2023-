@@ -58,8 +58,7 @@ import pandas as pd
 
 #use this if you want to save the data in a specific path
 #else just type the file name as for example "Sample.csv"
-path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con2_perturbation/Trial1.csv"
-
+path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con1_perturbation/Trial1.csv"
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
@@ -644,8 +643,8 @@ pygame.quit()
 #cut the time to stop at the appropriate time
 #get the index of the last data point you need
 cut_t = np.where(np.array(time_task2) == time_task22[-1])
+time_task2 = time_task2[0:cut_t+1]
 
- 
 t1 = time_task1[-1]-time_task1[0]
 t2 = time_task2[-1]-time_task2[0]
 
@@ -693,7 +692,6 @@ results_table = {'':['Mean','Std','RMS','Time'],
 results_perf = {'Perf 1': perf1,
                 'Perf 2': perf2}
 
-
 #table with the first table and second table in one
 results_tot = {'':['Mean','Std','RMS','Time'],
                   'Task 1': np.array([mean_perf1,std_perf1,rms_perf1,t1]),
@@ -702,12 +700,24 @@ results_tot = {'':['Mean','Std','RMS','Time'],
                   'Perf 2': perf2,
                   'Time 1': time_task1,
                   'Time 2': time_task2,
+                  'Time 22': time_task22,
                   'Trajectory 1x': np.array(pm_task1_array)[:,0],
                   'Trajectory 1y': np.array(pm_task1_array)[:,1],
                   'Trajectory 2x': np.array(pm_task2_array)[:,0],
                   'Trajectory 2y': np.array(pm_task2_array)[:,1]}
 
-#make the arrays fitting to dataframe, since their size vary
+
+#perf1 & perf2 has the information of the performance - thus the distance to the 'optimal' line
+#time 1 is the time from start to finish of the drawing. If you draw another line, this will be added to the timeline
+
+#you need time_task22 for the drawing of the trajectories, since this has the exact amount of time
+#points as perf2 data points has. time_task2 also reflects the time in between drawings -> so you get a better
+#representation of how long the total task took, while time_task22 only gives the time for each seperate line
+
+#the trajectory data is to plot the trajectories afterwards. I seperated x and y data for task1 and task2
+
+
+#make the arrays fitting to dataframe, since their sizes vary
 df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in results_tot.items()]))
 #save the data in a csv file in the path1 of choice
 df.to_csv(path1, index = False, header = True, sep=';', decimal=",")
@@ -721,7 +731,7 @@ plt.title("The performance for task 1 and 2 against time")
 plt.legend(loc="upper right")
 plt.show()
 
-#plot the trajectories next to the 'perfect lines'
+#plot the trajectories of task 1 next to the 'perfect lines'
 plt.plot(ref_cut[:,0],ref_cut[:,1], color = 'k', label="target")
 plt.plot(np.array(pm_task1_array)[:,0],np.array(pm_task1_array)[:,1], label="performance")
 plt.ylabel("Y [pixels]")
@@ -730,6 +740,7 @@ plt.title("Trajectory task 1")
 plt.legend(loc="upper right")
 plt.show()
 
+#plot the trajectories of task 1 next to the 'perfect lines'
 plt.plot([p13.x,p12.x],[p13.y,p12.y], color = 'k', label="target")
 plt.plot([p11.x,p10.x],[p11.y,p10.y], color = 'k')
 plt.plot([p9.x,p8.x],[p9.y,p8.y], color = 'k')
@@ -746,7 +757,6 @@ plt.show()
 '''ANALYSIS'''
 
 state = np.array(state)
-
 plt.figure(3)
 plt.subplot(411)
 plt.title("VARIABLES")
