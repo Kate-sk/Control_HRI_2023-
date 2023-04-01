@@ -57,6 +57,10 @@ from numpy.linalg import lstsq
 from tabulate import tabulate
 import pandas as pd
 
+#use this if you want to save the data in a specific path
+#else just type the file name as for example "Sample.csv"
+path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con1_perturbation/Trial10.csv"
+
 
 def closest_node(node, nodes):
     closest_index = distance.cdist([node], nodes).argmin()
@@ -328,6 +332,7 @@ pm_arr = []
 last = None
 moving = False
 time_task1 = []
+pm_task1_array = []
 
 #second task
 task2 = False
@@ -337,6 +342,8 @@ time_task2 = []
 time_task22 = []
 tot_t = []
 inter = []
+pm_task2_array = []
+
 
 # wait until the start button is pressed
 run = True
@@ -544,6 +551,7 @@ while run:
     #performance of task 1
     if pm_arr != [] and task2 == False and drawing == True:
         #z = pm_arr[-1] #get the mouse position of the line drawing
+        pm_task1_array.append(xh)
         z = xh
         perf_pm = [z[0],z[1]] #place it in an array
         z = closest_node(perf_pm, line_coor) #use the function to calculate the point closest to the mouse during cutting and the distance between them
@@ -577,6 +585,7 @@ while run:
         time_task22.append(t)
         #pm_task2 = pm_arr[-1][0],pm_arr[-1][1]    #haptic position
         pm_task2 = xh
+        pm_task2_array.append(xh)
         #find out 
         z = closest_node(inter[0], points) #use the function to calculate the point closest to the mouse during cutting and the distance between them
         #right_point = z[2] #0 = p2, 11 = p13        #so which sew point is the closest to the mouse, use this to calculate performance towards the right line
@@ -636,8 +645,8 @@ t1 = time_task1[-1]
 t2 = time_task2[-1]-time_task2[0]
 
 #distance to the 'perfect' line in pixels
-perf1 = dis_line_pm
-perf2 = dis_line_task2
+perf1 = np.array(dis_line_pm)
+perf2 = np.array(dis_line_task2)
 
 #mean distance to 'perfect' line
 mean_perf1 = np.mean(dis_line_pm)
@@ -659,25 +668,46 @@ rms_perf2 = rmse(zeros_task2,dis_line_task2)
 
 #array with the results
 #mean - std - rms - time
-results = np.array([[mean_perf1,mean_perf2],[std_perf1,std_perf2],[rms_perf1,rms_perf2],[t1,t2]])
+#results = np.array([[mean_perf1,mean_perf2],[std_perf1,std_perf2],[rms_perf1,rms_perf2],[t1,t2]])
 
-#table with results
-results_table = [['','Task 1','Task 2'],
+#table with results for a quick review
+results_table2 = [['','Task 1','Task 2'],
                  ['Mean',mean_perf1,mean_perf2],
                  ['Std',std_perf1,std_perf2],
                  ['RMS',rms_perf1,rms_perf2],
                  ['Time',t1,t2]]
-print(tabulate(results_table))
 
-results_table2 = {'':['Mean','Std','RMS','Time'],
+print(tabulate(results_table2))
+
+#make a table for the average values for an individual trial
+results_table = {'':['Mean','Std','RMS','Time'],
                   'Task 1': [mean_perf1,std_perf1,rms_perf1,t1],
-                  'Task 2': [mean_perf2,std_perf2,rms_perf2,t2]}#,
-                  #'',
-                  #'Perf1': [perf1],
-                  #'Perf2': [perf2]}
+                  'Task 2': [mean_perf2,std_perf2,rms_perf2,t2]}
 
-df = pd.DataFrame(results_table2)
-df.to_csv('Sample2.csv', index = False, header = True, sep=';', decimal=",")
+#make a table for the performance 
+results_perf = {'Perf 1': perf1,
+                'Perf 2': perf2}
+
+
+
+
+#table with the first table and second table in one
+results_tot = {'':['Mean','Std','RMS','Time'],
+                  'Task 1': np.array([mean_perf1,std_perf1,rms_perf1,t1]),
+                  'Task 2': np.array([mean_perf2,std_perf2,rms_perf2,t2]),
+                  'Perf 1': perf1,
+                  'Perf 2': perf2,
+                  'Time 1': time_task1,
+                  'Time 2': time_task2,
+                  'Trajectory 1x': np.array(pm_task1_array)[:,0],
+                  'Trajectory 1y': np.array(pm_task1_array)[:,1],
+                  'Trajectory 2x': np.array(pm_task2_array)[:,0],
+                  'Trajectory 2y': np.array(pm_task2_array)[:,1]}
+
+#make the arrays fitting to dataframe, since their size vary
+df = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in results_tot.items()]))
+#save the data in a csv file in the path1 of choice
+df.to_csv(path1, index = False, header = True, sep=';', decimal=",")
 
 #plot together the performance - accuracy against time
 plt.plot(time_task1,perf1, label="task 1")
@@ -688,34 +718,55 @@ plt.title("The performance for task 1 and 2 against time")
 plt.legend(loc="upper right")
 plt.show()
 
+#plot the trajectories next to the 'perfect lines'
+plt.plot(ref_cut[:,0],ref_cut[:,1], color = 'k', label="target")
+plt.plot(np.array(pm_task1_array)[:,0],np.array(pm_task1_array)[:,1], label="performance")
+plt.ylabel("Y [pixels]")
+plt.xlabel("X [pixels]")
+plt.title("Trajectory task 1")
+plt.legend(loc="upper right")
+plt.show()
+
+plt.plot([p13.x,p12.x],[p13.y,p12.y], color = 'k', label="target")
+plt.plot([p11.x,p10.x],[p11.y,p10.y], color = 'k')
+plt.plot([p9.x,p8.x],[p9.y,p8.y], color = 'k')
+plt.plot([p7.x,p6.x],[p7.y,p6.y], color = 'k')
+plt.plot([p5.x,p4.x],[p5.y,p4.y], color = 'k')
+plt.plot([p3.x,p2.x],[p3.y,p2.y], color = 'k')
+plt.plot(np.array(pm_task2_array)[:,0],np.array(pm_task2_array)[:,1], label="performance")
+plt.ylabel("Y [pixels]")
+plt.xlabel("X [pixels]")
+plt.title("Trajectory task 2")
+plt.legend(loc="upper right")
+plt.show()
 
 '''ANALYSIS'''
 
-#state = np.array(state)
+state = np.array(state)
 
-#plt.figure(3)
-#plt.subplot(411)
-#plt.title("VARIABLES")
-#plt.plot(state[:,0],state[:,1],"b",label="x")
-#plt.plot(state[:,0],state[:,2],"r",label="y")
-#plt.legend()
-#plt.ylabel("xm [m]")
+plt.figure(3)
+plt.subplot(411)
+plt.title("VARIABLES")
+plt.plot(state[:,0],state[:,1],"b",label="x")
+plt.plot(state[:,0],state[:,2],"r",label="y")
+plt.legend()
+plt.ylabel("xm [m]")
 
-#plt.subplot(412)
-#plt.plot(state[:,0],state[:,3],"b")
-#plt.plot(state[:,0],state[:,4],"r")
-#plt.ylabel("xh [m]")
+plt.subplot(412)
+plt.plot(state[:,0],state[:,3],"b")
+plt.plot(state[:,0],state[:,4],"r")
+plt.ylabel("xh [m]")
 
-#plt.subplot(413)
-#plt.plot(state[:,0],state[:,7],"b")
-#plt.plot(state[:,0],state[:,8],"r")
-#plt.ylabel("F [N]")
+plt.subplot(413)
+plt.plot(state[:,0],state[:,7],"b")
+plt.plot(state[:,0],state[:,8],"r")
+plt.ylabel("F [N]")
 
-#plt.subplot(414)
-#plt.plot(state[:,0],state[:,9],"c")
-#plt.plot(state[:,0],state[:,10],"m")
-#plt.ylabel("K [N/m]")
-#plt.xlabel("t [s]")
+plt.subplot(414)
+plt.plot(state[:,0],state[:,9],"c")
+plt.plot(state[:,0],state[:,10],"m")
+plt.ylabel("K [N/m]")
+plt.xlabel("t [s]")
 
-#plt.tight_layout()
+plt.tight_layout()
 
