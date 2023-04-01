@@ -40,7 +40,6 @@ INSTRUCTORS: Michael Wiertlewski & Laurence Willemet & Mostafa Attala
 e-mail: {m.wiertlewski,l.willemet,m.a.a.atalla}@tudelft.nl
 """
 
-
 import pygame
 import numpy as np
 import math
@@ -59,7 +58,7 @@ import pandas as pd
 
 #use this if you want to save the data in a specific path
 #else just type the file name as for example "Sample.csv"
-path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con1_perturbation/Trial10.csv"
+path1 = "/Users/pltangkau/Desktop/Python/Results/PP1/Con2_perturbation/Trial1.csv"
 
 
 def closest_node(node, nodes):
@@ -640,8 +639,14 @@ pygame.quit()
 
 '''Performance Analysis'''
 #t1 = time start drawing until you stop drawing
-#t2 = time start drawing until the screen is closed 
-t1 = time_task1[-1]
+#t2 = time start drawing until the last point you drew
+
+#cut the time to stop at the appropriate time
+#get the index of the last data point you need
+cut_t = np.where(np.array(time_task2) == time_task22[-1])
+
+ 
+t1 = time_task1[-1]-time_task1[0]
 t2 = time_task2[-1]-time_task2[0]
 
 #distance to the 'perfect' line in pixels
@@ -687,8 +692,6 @@ results_table = {'':['Mean','Std','RMS','Time'],
 #make a table for the performance 
 results_perf = {'Perf 1': perf1,
                 'Perf 2': perf2}
-
-
 
 
 #table with the first table and second table in one
