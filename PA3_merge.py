@@ -61,12 +61,14 @@ import pandas as pd
 #use with_force to simulate with or without perturbation
 
 #condition1
-#with_force = False
-#path1 = "/Users/pltangkau/Desktop/Python/Results/PP3/Con1_withoutperturbation/Trial10.csv"
+# with_force = False
+# # path1 = "/Users/pltangkau/Desktop/Python/Results/PP3/Con1_withoutperturbation/Trial10.csv"
+# path1 = "trial_10.csv"
 
 #condition2
-#with_force = True
+with_force = True
 #path1 = "/Users/pltangkau/Desktop/Python/Results/PP3/Con2_perturbation/Trial2.csv"
+path1 = "Con2_pertrubation/trial_10.csv"
 
 
 
